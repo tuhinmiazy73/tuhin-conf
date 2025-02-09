@@ -1,1 +1,56 @@
+pipeline {
+    agent any
 
+    environment {
+        IMAGE_TAG = "tuhin200/tuhin-cv:${BUILD_NUMBER}"
+        DOCKER_CREDENTIALS = "tuhin200"
+        GIT_REPO = "https://github.com/tuhinmiazy73/tuhin-conf.git"
+        GITHUB_TOKEN_CREDENTIALS = "GITHUB-TOKEN"
+        K8S_MANIFEST_FILE = "nginx-deploy.yaml"
+    }
+
+    stages {
+        stage('CLEANUP WORKSPACE') {
+            steps {
+                script {
+                    cleanWs()
+                }
+            }
+        }
+
+        stage('CHECKOUT GIT REPO') {
+            steps {
+                git branch: 'main', credentialsId: 'tuhinmiazy73', url: "${GIT_REPO}"
+            }
+        }
+
+        stage('UPDATE K8S MANIFEST') {
+            steps {
+                sh """
+                    cat nginx-deploy.yaml
+                    sed -i "s#docker.io/tuhin200/tuhin-cv:.*#docker.io/tuhin200/tuhin-cv:${BUILD_NUMBER}#" ${K8S_MANIFEST_FILE}
+                    cat nginx-deploy.yaml
+                    git add nginx-deploy.yaml
+                    git commit -m "Updated deployment files to ${IMAGE_TAG}'"
+                """
+            }
+        }
+
+        stage('COMMIT AND PUSH UPDATED K8S MANIFEST TO GITHUB') {
+            steps {
+                withCredentials([string(credentialsId: "${GITHUB_TOKEN_CREDENTIALS}", variable: 'GITHUB_TOKEN')]) {
+                    sh """
+                        cat nginx-deploy.yaml
+                        sed -i "s#docker.io/tuhin200/tuhin-cv:.*#docker.io/tuhin200/tuhin-cv:${BUILD_NUMBER}#" ${K8S_MANIFEST_FILE}
+                        cat nginx-deploy.yaml
+                        git add nginx-deploy.yaml
+                        git commit -m "Updated deployment files to ${IMAGE_TAG}'"
+                        git config --global user.email "tuhinmiazy73@gmail.com"
+                        git config --global user.name "tuhinmiazy73"
+                       	git push https://github-username:${GITHUB_TOKEN}@github.com/tuhinmiazy73/tuhin-conf.git main 
+		               """
+                }
+            }
+        }
+    }
+}
