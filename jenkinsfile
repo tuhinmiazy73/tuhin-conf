@@ -28,7 +28,7 @@ pipeline {
                 withCredentials([string(credentialsId: "${GITHUB_TOKEN_CREDENTIALS}", variable: 'GITHUB_TOKEN')]) {
                     sh """
                         cat nginx-deploy.yaml
-                        sed -i "s/${DOCKER_USERNAME}/${APP_NAME}\:.*/${DOCKER_USERNAME}/${APP_NAME}:${IMAGE_TAG}/g" ${K8S_MANIFEST_FILE}
+                        sed -i "s/${DOCKER_USERNAME}\/${APP_NAME}:.*${DOCKER_USERNAME}\/${APP_NAME}:${IMAGE_TAG}/g" ${K8S_MANIFEST_FILE}
                         cat nginx-deploy.yaml
                         git add nginx-deploy.yaml
                         git commit -m "Updated deployment files to ${IMAGE_TAG}'"
